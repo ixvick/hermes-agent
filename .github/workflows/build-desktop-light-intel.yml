@@ -1,0 +1,55 @@
+
+name: Build Hermes Desktop Light (Intel)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: macOS Intel Light
+    runs-on: macos-15-intel
+    timeout-minutes: 180
+
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Verify environment
+        run: |
+          uname -m
+          sw_vers
+          python3 --version
+          git rev-parse HEAD
+          df -h .
+
+      - name: Build Desktop Light
+        run: |
+          SHA="$(git rev-parse HEAD)"
+          python3 scripts/bundles/desktop.py \
+            --commit "$SHA" \
+            --variant light
+
+      - name: Inspect artifacts
+        if: always()
+        run: |
+          ls -lah apps/desktop/release/ || true
+
+      - name: Upload DMG and ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: hermes-desktop-light-darwin-x64
+          path: |
+            apps/desktop/release/*.dmg
+            apps/desktop/release/*.zip
+          if-no-files-found: error
+          retention-days: 14
+
+
